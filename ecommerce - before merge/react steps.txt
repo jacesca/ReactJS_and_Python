@@ -1,0 +1,88 @@
+tools to install in Visual Studio
+Auto Rename Tag
+Color Highlight
+ES7 React/Redux
+Prettier
+
+Start a React project
+
+1) Have Node.js installed
+2) Install
+npx create-react-app my-app
+
+npm start
+
+# Demo onLine
+https://www.buildproshop.com/#/
+
+# Adding boostrap styles
+https://reactjs.org/
+https://react-bootstrap.github.io/getting-started/introduction
+https://bootswatch.com/
+https://mdbootstrap.com/docs/react/utilities/spacing/
+https://cdnjs.com/ --> Look for fonts and select "font-awesome" for icons
+https://fontawesome.com/icons --> Icons
+https://icons.getbootstrap.com/ --> Icons
+https://v5.reactrouter.com/web/example/url-params
+
+npm install react-bootstrap
+
+npm install react-router-dom 
+npm install -S react-router-bootstrap
+npm install axios
+npm install redux react-redux redux-thunk redux-devtools-extension
+npm install react-number-format
+npm install react-paypal-button-v2 --force
+
+# To review errors:
+npm fund
+npm audit --production 
+
+3) Copy boostrap link to index.html
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" />
+
+For error:
+Inefficient Regular Expression Complexity in nth-check - https://github.com/advisories/GHSA-rp65-9cf3-cjxr
+
+Follow: https://stackoverflow.com/questions/72489256/6-high-severity-vulnerabilities-in-react-icons-4-4-0
+Take react-scripts and move it to devDependencies (if you don't have it, create it):
+"dependencies": { "react": "^17.0.2", "react-dom": "^17.0.2" }, 
+"devDependencies": { "react-scripts": "4.0.3" },
+
+# To code inside
+rfce --> react component
+imp --> To import
+imd --> To import boostrap
+
+
+
+
+# Steps to create the form
+1) Create constants
+2) Create the reducers (to take the original value add "..." spread operator. Ex. ...state)
+3) Add to the store (You can see this values in the state option of the Redux section in the inspect of your browser)
+4) Create the actions (where api will be connected to get, update, delete or create the data)
+5) Create the screen (how it will look in the front, related to the page or the form)
+6) Register the screen in App.js
+
+
+
+# Steps to configure a fake account in PayPal
+https://developer.paypal.com/home
+https://developer.paypal.com/demo/checkout/#/pattern/responsive
+https://www.npmjs.com/package/react-paypal-button-v2#large_blue_diamond-prerequisites
+https://www.sandbox.paypal.com/sv/home
+1. Login in https://developer.paypal.com/home
+2. Go to User menu >> Dashboard
+3. Select sandbox account
+4. Create 2 accounts one for personal and one for fake
+5. Go to My Apps & Credentials
+6. Create a mechant app.
+7. Use the bussiness account
+8. Save clientId and secretKey
+9. Google paypal buttons script (https://developer.paypal.com/demo/checkout/#/pattern/server)
+10. Add the script to the code (OrderScreen.js)
+11. Look for react-paypal-button-v2 (https://www.npmjs.com/package/react-paypal-button-v2#large_blue_diamond-prerequisites)
+12. Install it --> npm install react-paypal-button-v2 --save
+13. Add the button script to the code
+14. To review the business paypal account, go to https://www.sandbox.paypal.com/sv/home

@@ -1,0 +1,69 @@
+# Create the project directory
+
+# Create a environment to isolate our package dependencies locally
+conda create --name restapi python
+
+# Install Django and Django REST framework into the virtual environment
+conda install django
+conda install -c conda-forge djangorestframework
+conda install -c anaconda pygments
+conda install -c conda-forge httpie
+
+# Set up a new project with a single application
+django-admin startproject tutorial
+cd tutorial
+
+# Create an app that we'll use to create a simple Web API.
+python manage.py startapp snippets
+
+# Add our new snippets app and the rest_framework app to INSTALLED_APPS  (tutorial/settings.py)
+
+# sync your database for the first time:
+python manage.py migrate
+
+# create an user
+python manage.py createsuperuser --email admin@example.com --username admin
+
+# Create the model in snippets
+
+# Create a migration for our snippet model, and sync the database.
+python manage.py makemigrations snippets
+python manage.py migrate snippets
+
+# Working with Serializers
+python manage.py shell
+
+# Create a couple of code snippets to work with.
+  from snippets.models import Snippet
+  from rest_framework.renderers import JSONRenderer
+  from rest_framework.parsers import JSONParser
+
+  snippet = Snippet(code='foo = "bar"\n')
+  snippet.save()
+
+  snippet = Snippet(code='print("hello, world")\n')
+  snippet.save()
+
+# Take a look at serializing one of those instances.
+  from snippets.serializers import SnippetSerializer
+
+  serializer = SnippetSerializer(snippet)
+  serializer.data
+
+# Guide: https://www.django-rest-framework.org/tutorial/1-serialization/
+
+# First version
+http://127.0.0.1:8000/snippets/
+http://127.0.0.1:8000/snippets/1
+
+# Second version
+http://127.0.0.1:8000/snippets/
+http://127.0.0.1:8000/snippets/1
+http://127.0.0.1:8000/snippets/?format=json
+http://127.0.0.1:8000/snippets/1?format=json
+
+# To delete sqlite db and restart
+rm -f db.sqlite3
+rm -r snippets/migrations
+python manage.py makemigrations snippets
+python manage.py migrate

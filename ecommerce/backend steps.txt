@@ -1,0 +1,377 @@
+# Move to the ecommerce directory
+
+# Create a environment to isolate our package dependencies locally
+conda create --name restapi python
+
+# Install Django and Django REST framework into the virtual environment
+conda install django
+conda install -c conda-forge djangorestframework
+conda install -c anaconda pygments
+conda install -c conda-forge httpie
+conda install -c anaconda pillow
+conda install -c conda-forge django-cors-headers
+pip install djangorestframework_simplejwt
+pip install python-decouple
+pip install django-filter
+pip install psycopg2 # For postgresql
+pip install django-storages # For Amazon S3, Apache Libcloud, Azure Storage, Google Cloud Storage, SFTP
+pip install boto3
+pip install whitenoise
+pip install gunicorn
+pip install pytest
+
+# Set up a new project with a single application
+django-admin startproject backend
+
+# Migrating the initial data.
+python manage.py loaddata Product.json
+
+# Create a super user
+python manage.py createsuperuser --username admin@test.com
+
+# Load json data
+python manage.py loaddata Product.json
+
+# Collect static files
+python manage.py collectstatic
+
+# Run server
+python manage.py runserver
+
+# To generate requirements.txt file
+pip list --format=freeze > requirements.txt
+
+# To export the environment in a YAML file:
+conda env export > environment.yml
+
+# To create an environment from a YAML file
+conda env create --name --file environment.yml
+
+# To create an environment from a .yml file
+conda env create --file environment.yml --name envname 
+
+# python instruction to access environment variables
+os.environ.get('AWS_ACCESS_KEY_ID')
+In cmd: myenv\scripts\activate
+
+
+# Writable nested serializers
+https://www.django-rest-framework.org/api-guide/relations/#writable-nested-serializers
+https://stackoverflow.com/questions/57186336/django-rest-framework-creating-child-objects-in-parent-serializer-using-child-se
+
+# Filters
+https://www.django-rest-framework.org/api-guide/filtering/
+
+# RestFrameWork pagination
+https://stackoverflow.com/questions/40985248/django-api-framework-getting-total-pages-available
+https://www.django-rest-framework.org/api-guide/pagination/#example
+
+
+#########################################################################
+## CONFIGURING POSTGRESQL
+#########################################################################
+1) Run in cmd in the restapi environment
+pip install psycopg2
+2) Go to settings.py
+3) Replace 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+>>>for the next lines:
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('POSTGRES_DB', 'proshop'),
+        'USER': config('POSTGRES_USER', 'proshop'),
+        'PASSWORD': config('POSTGRES_PASSWORD', 'proshop'),
+        'HOST': config('POSTGRES_HOST', 'localhost'),
+        'PORT': config('POSTGRES_PORT', '5432'),
+    }
+}
+>>>Be aware that values need to be saved in .env file
+
+4) Run >>python manage.py makemigrations
+5) Run >>python manage.py migrate
+6) Create a user in the new databas >>python manage.py createsuperuser --username admin@test.com
+7) Migrating the initial data >>python manage.py loaddata Product.json
+8) Run the server >>python manage.py runserver
+
+
+#########################################################################
+## CONFIGURING RDS IN AMAZON
+#########################################################################
+1) Login in aws.amazon.com
+2) Look for RDS (Relational Database Services)
+3) Create a new db
+>>Create Database button
+>>Select Standard create
+>>Engine options: PostgreSQL
+>>Default version: PostgreSQL 12.5-R1
+>>Templates: Production (Others options: Dev/Test, Free tier) -->Select Free tier and the rest steps will be configured.
+>>settings section
+*********>>DB instance identifier: proshop-identifier
+>>Credentials settings section
+>>Master username: postgresql
+>>Master password:
+>>Confirm password:
+>>DB instance size: Burstable classes (include t classes) and select db.t3.micro
+>>Storage section:
+>>Storage type: General Purpose (SSD)
+>>Allocate Storage: 20 GB
+>>Keep Enable storage autscaling
+>>Availability & durability: Do not create a standby instance
+>>Additional configuration section
+*********>>Initial database name: proshop
+>>Unmark Enable automatic backups
+>>Keep Performance Insights
+>>Create database button
+4) Go to databases (left menu option)
+5) Select the proshop-identifier database
+6) From the Connectivity & Security tab take the endpoint
+proshop-identifier.cf2pcfx1xna.us-west-2.rds.amazonaws.com
+4) Update HOST, NAME, USER, and PASSWORD in DATABASES configuration/settings.py
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'proshop',
+        'USER': 'postgresql',
+        'PASSWORD': 'xxxxxxxx',
+        'HOST': 'proshop-identifier.cf2pcfx1xna.us-west-2.rds.amazonaws.com', 
+        'PORT': '5432',
+    }
+}
+
+
+#########################################################################
+## CONFIGURING S3 SERVICE IN AMAZON
+#########################################################################
+1) Login in aws.amazon.com
+2) Look for S3
+3) Create a public bucket
+>>Bucket name
+>>Region: US West (Orego) us-west-2
+>>Unmark "Block all public access"
+>>Confirm that you "acknowledge that the current settings might result in this bucket and the objets within becoming public"
+>>Bucket Versioning: Disable
+>>No tags
+>>Default encryption: disable
+>>No advance settings configured
+>>Create button
+4) Set permissions to the bucket
+>>Go to the list of buckets
+>>Click on Permissions Tab
+>>Access: Object can be public
+>>Bucket policy section and click on Edit button
+>>Add the following police to the created bucket
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowPublicRead",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
+}
+Example of the policy in fast-pass feature
+{
+    "Version": "2008-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowPublicRead",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "*"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::fastpass-static/*"
+        }
+    ]
+}
+5) In aws.amazon.com look for IAM
+6) Create an user
+>>Go to users menu option (left side)
+>>Click on Add user
+>>Set user details: user name:-------
+>>Select AWS access type: Programmatic access
+>>Next Permissions button
+7) Define the user permissions
+>>Attach existing policies directly
+>>Filter policies s3
+>>Select AmazonS3FullAccess
+>>Next Tags button without Change
+>>Next Review button 
+>>Create user button
+>>Save the Access Key ID and Secret Access Key
+8) In cmd run >>pip install django-storages
+9) Run >>pip install boto3
+10) Add to the settings.py
+...
+INSTALLED_APPS = [
+    ...
+    'rest_framework_simplejwt',
+    'storages',
+    ...
+]
+...
+# S3 Storage configuration
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+AWS_QUERYSTRING_AUTH = False
+AWS_ACCESS_KEY_ID = 
+AWS_SECRET_ACCESS_KEY = 
+AWS_STORAGE_BUCKET_NAME = 'your-bucket-name'
+
+
+#########################################################################
+## FINAL STEPS IN DJANGO CONFIGURATION TO MOVE IT TO PRODUCTION
+#########################################################################
+1) Add to the settings.py
+...
+DEBUG = config('DEBUG', 'True')
+...
+ALLOWED_HOSTS = [ '127.0.0.1', 'localhost' ]
+...
+MEDIA_ROOT = BASE_DIR / 'static/images'
+STATIC_ROOT  =   os.path.join(BASE_DIR, 'staticfiles')
+...
+2) Run in cmd
+python manage.py collectstatic
+3) Go to backend/urls.py and add
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+TO SIMPLIFY STATIC FILES 
+4) Run in cmd
+pip install whitenoise
+5) Add to settings.py
+...
+MIDDLEWARE = [
+    ...
+    'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    ...
+]
+
+#########################################################################
+## TO DEPLOY TO HEROKU
+#########################################################################
+1) Go to Heroku.com
+2) Click on New >> Create new app
+3) Complete App name and region
+4) Create app button 
+5) Open app --> You can see the link of the app you recently created
+
+6) In Settings tab, select Reveal Config Vars (Config Vars section)
+7) Add the variables defined in the env file
+8) In Settings tab, buildpacks section, click Add buildpack button
+9) Select python
+
+(Guide in devcenter.heroku.com/articles/django-app-configuration, look for heroku django in browser) 
+10) In local environment, we need to generate the requirements.txt
+11) In cmd run >> pip install guicorn
+12) In cmd run >> pip install django-heroku
+
+13) In parent backend folder create a Procfile file without extension and add the following lines
+web: gunicorn backend.wsgi --log-file-
+
+14) Create the requirements.txt
+pip list --format=freeze > requirements.txt
+
+15) Create the runtime.txt file in the parent backend folder
+python-3.10.9
+
+16) Add the heruku app url (which host the complete proshop system) into the ALLOWED_HOSTS in settings.py
+...
+ALLOWED_HOSTS = [ '127.0.0.1', 'localhost', 'proshop-demo.herokuapp.com' ]
+...
+
+17) Add a .gitignore file in backend/frontend folder
+And be sure that the build folder is commented
+# production
+# /build
+
+18) Create the github repository and push the code
+19) Go to Heroku.com
+20) Look for the app
+21) Select in Dyno formation --> Configure Dynos
+22) Select the Deploy tab
+23) Select github
+24) Provide access to GitHub and look for the repo-name
+25) Click on connect
+26) Go to Manual Deploy >> Choose a branch to deploy: master and click on Deploy Branch
+
+Advertency
+If the error
+"Error while running '$ python manage.py collectstatic --noinput'"
+...
+heroku config:set DISABLE_COLLECTSTATIC=1
+...
+>>Do the following
+26.1) In Settings tab click on Config Vars and add
+DISABLE_COLLECTSTATIC = 1
+26.2) Deploy it again
+
+27) In Add ons
+>>Go to the resources tab
+>>Click on Configure Add-ons
+Free Dynos 
+web gunicorn backend.wsgi --log-file -
+
+28) Add the environment vars in Config Vars (Settings tab)
+
+Advertency
+To review errors in Heroku, install the Heroku cli
+Once installed:
+>> heroku Login
+q 
+
+To review installed apps
+>> heroku apps
+
+To review error log
+>> heroku logs --tail -a <name of app>
+
+
+29) Create a domain in Go Daddy
+30) Go to Heroku and in settings look for Domains 
+31) Click on Add domain
+>> Set Domain name
+>> Click on Next
+>> save domain name and dns target
+
+32) Go to GoDaddy and look for the domain
+33) Click on Manage my domain
+34) Click on DNS
+35) In records delete the CNAME (_domainconnect) default configuration
+36) Edit the CNAME (wwww)
+Host: www
+Point to: set the DNS saved from heroku.com
+TTL: 1/2 Hour
+37) Go to Forwarding and ADD domain
+Forward to: Domain bougth in GoDaddy
+Forward type: Permanent(301)
+Settings: Forward only
+Save
+After saved change the http to https
+38) Add the new domain to the ALLOWED_HOSTS in settings.py
+www.proshop.com
+proshop.com
+39) Add a SSL certificate in Heroku (upgrade the plan to Hobby) in settings tab
+To upgrade the plan:
+Go to overview tab
+Click on configure Dynos
+Click on Change Dyno Type
+40) Configure the SSl in settings.py adding the followin lines
+if os.getcwd() == '/app': # To know that we are running in Heroku and not locally
+  SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+  SECURE_SSL_REDIRECT = True
+  DEBUG = False
+41) Push to Github and Deploy in Heroku
+

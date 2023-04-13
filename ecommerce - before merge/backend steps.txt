@@ -1,0 +1,33 @@
+# Move to the ecommerce directory
+
+# Create a environment to isolate our package dependencies locally
+conda create --name restapi python
+
+# Install Django and Django REST framework into the virtual environment
+conda install django
+conda install -c conda-forge djangorestframework
+conda install -c anaconda pygments
+conda install -c conda-forge httpie
+conda install -c anaconda pillow
+conda install -c conda-forge django-cors-headers
+pip install djangorestframework_simplejwt
+pip install python-decouple
+pip install django-filter
+
+
+# Set up a new project with a single application
+django-admin startproject backend
+
+# Migrating the initial data.
+python manage.py loaddata Product.json
+
+# Writable nested serializers
+https://www.django-rest-framework.org/api-guide/relations/#writable-nested-serializers
+https://stackoverflow.com/questions/57186336/django-rest-framework-creating-child-objects-in-parent-serializer-using-child-se
+
+# Filters
+https://www.django-rest-framework.org/api-guide/filtering/
+
+# RestFrameWork pagination
+https://stackoverflow.com/questions/40985248/django-api-framework-getting-total-pages-available
+https://www.django-rest-framework.org/api-guide/pagination/#example

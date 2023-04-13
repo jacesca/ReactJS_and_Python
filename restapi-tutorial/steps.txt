@@ -1,0 +1,40 @@
+# Create the project directory
+
+# Create a environment to isolate our package dependencies locally
+conda create --name restapi python
+
+# Install Django and Django REST framework into the virtual environment
+conda install django
+conda install -c conda-forge djangorestframework
+
+# Set up a new project with a single application
+django-admin startproject tutorial
+cd tutorial
+cd tutorial
+django-admin startapp quickstart
+cd ..
+
+tutorial
+|_ tutorial
+   |_quickstart
+
+# sync your database for the first time:
+python manage.py migrate
+
+# create an user
+python manage.py createsuperuser --email admin@example.com --username admin
+
+# create the tutorial/quickstart/serializers.py file
+# create the views (tutorial/quickstart/views.py)
+# prepare the URLs (tutorial/urls.py)
+# set the pagination (tutorial/settings.py)
+# update the installed apps (tutorial/settings.py)
+
+# Run the server
+python manage.py runserver
+
+# Finally open the api
+http://127.0.0.1:8000/users/
+
+# Guide
+https://www.django-rest-framework.org/tutorial/quickstart/

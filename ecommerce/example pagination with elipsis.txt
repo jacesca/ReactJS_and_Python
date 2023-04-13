@@ -1,0 +1,531 @@
+frontend\src\components\Paginate.js
+
+import React from 'react'
+import { Pagination } from 'react-bootstrap'
+import { useLocation } from "react-router-dom";
+ 
+ 
+const useQuery = () => {
+ return new URLSearchParams(useLocation().search);
+}
+ 
+function Paginate({page, pages, maxPageDisplay=5, isAdmin=false}) {
+ 
+    let keyword = useQuery().get("keyword")
+ 
+    let url = !isAdmin ? '/' : '/admin/productlist/'
+    url += keyword ? `?keyword=${keyword}&` : '?'
+ 
+ 
+    return (pages > 1 && (
+        <Pagination>
+ 
+            {/* First */}
+            {pages != 1 && page != 1 ? (
+                <Pagination.First href={`${url}page=1`}>First</Pagination.First>
+            ) : (
+                <Pagination.First disabled>First</Pagination.First>
+            )}
+ 
+ 
+            {/* Prev */}
+            {page > 1 ? (
+                <Pagination.Prev href={`${url}page=${page-1}`}>&laquo;</Pagination.Prev>
+            ) : (
+                <Pagination.Prev disabled>&laquo;</Pagination.Prev>
+            )}
+            
+            
+            {/* Pages
+               <React.Fragment>: https://www.designcise.com/web/tutorial/how-to-add-a-key-to-an-empty-tag-in-react
+            */}
+            {[...Array(pages).keys()].map((x) => (page === x+1 ? (
+                        <Pagination.Item key={x+1} active href={`${url}page=${x+1}`}>{x+1}</Pagination.Item>
+                    ) : x+1 > page && x+1 <= page + maxPageDisplay ? (
+                        <React.Fragment key={x+1}>
+                            <Pagination.Item href={`${url}page=${x+1}`}>{x+1}</Pagination.Item>  
+                            {x+1 === page + maxPageDisplay && x+1 < pages && (
+                                <Pagination.Ellipsis href={`${url}page=${page+(maxPageDisplay+1)}`} />
+                            )}            
+                        </React.Fragment>              
+                    ) : x+1 < page && x+1 >= page - maxPageDisplay && (
+                        <React.Fragment key={x+1} >
+                            {x+1 === page - maxPageDisplay && x+1 > 1 && (
+                                <Pagination.Ellipsis href={`${url}page=${page-(maxPageDisplay+1)}`} />
+                            )}
+                            <Pagination.Item href={`${url}page=${x+1}`}>{x+1}</Pagination.Item>
+                        </React.Fragment>    
+                    )
+                ))
+            }
+ 
+ 
+            {/* Next */}
+            {page < pages ? (
+                <Pagination.Next href={`${url}page=${page+1}`}>&raquo;</Pagination.Next>
+            ) : (
+                <Pagination.Next disabled>&raquo;</Pagination.Next>
+            )}
+ 
+ 
+            {/* Last */}
+            {pages != page ? (
+                <Pagination.Last href={`${url}page=${pages}`}>Last</Pagination.Last>
+            ) : (
+                <Pagination.Last disabled>Last</Pagination.Last>
+            )}
+ 
+        </Pagination>
+    ))
+}
+ 
+export default Paginate
+frontend\src\screens\HomeScreen.js
+
+import React, {useState, useEffect} from "react";
+import { Row, Col } from 'react-bootstrap';
+import { useLocation } from "react-router-dom";
+import Product from '../components/Product';
+import Loader from '../components/Loader';
+import Message from '../components/Message';
+import Paginate from '../components/Paginate';
+import { useDispatch, useSelector } from 'react-redux';
+import { listProducts } from '../actions/productActions';
+ 
+//import axios from 'axios';
+//import products from '../products';
+ 
+ 
+//const useQuery = () => {
+//  return new URLSearchParams(useLocation().search);
+//}
+ 
+ 
+function HomeScreen() {
+  //const [products, setProducts] = useState([])
+  const dispatch = useDispatch()
+  
+  //let keyword = useQuery().get("keyword")
+ 
+  let keyword = useLocation().search //>>> '?keyword=abc'
+  //console.log(keyword)
+ 
+  const productList = useSelector(state => state.productList)
+  const {error, loading, products, page, pages} = productList
+ 
+ 
+  useEffect(() => {
+    
+    // async function fetchProducts() {
+    //   const {data} = await axios.get('/api/products/')
+    //   setProducts(data)
+    // }
+    // fetchProducts()
+ 
+    dispatch(listProducts(keyword))
+ 
+  }, [dispatch, keyword])
+ 
+  //const products = []
+ 
+  return <div>
+      <h1>Latest Products</h1>
+      {loading ? <Loader/>
+          : error ? <Message variant='danger'>{error}</Message> //Hoặc: <Message variant='danger' children={error}></Message>
+          :
+          <div>
+            <Row>
+              {products.map(product => (
+                  <Col key={product._id} sm={12} md={6} lg={4} xl={3}>
+                    <Product product={product} />
+                  </Col>
+              ))}
+            </Row>
+ 
+            <Paginate page={page} pages={pages} />
+ 
+          </div>
+      }
+      
+  </div>;
+}
+ 
+export default HomeScreen;
+ 
+frontend\src\screens\ProductListScreen.js
+
+import React, {useEffect} from "react";
+import { useLocation } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { LinkContainer } from "react-router-bootstrap";
+import { Table, Button, Row, Col } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import Loader from '../components/Loader';
+import Message from '../components/Message';
+import Paginate from '../components/Paginate';
+import { listProducts, deleteProduct, createProduct } from '../actions/productActions'
+import { PRODUCT_CREATE_RESET } from '../constants/productConstants'
+ 
+function ProductListScreen() {
+    const navigate = useNavigate();
+ 
+    const dispatch = useDispatch()
+ 
+    let keyword = useLocation().search //>>> '?keyword=abc'
+ 
+    const productList = useSelector(state => state.productList)
+    const {loading, error, products, page, pages} = productList
+ 
+    const productDelete = useSelector(state => state.productDelete)
+    const {loading: loadingDelete, error: errorDelete, success: successDelete} = productDelete
+ 
+    const productCreate = useSelector(state => state.productCreate)
+    const {loading: loadingCreate, error: errorCreate, success: successCreate, product: createdProduct} = productCreate
+ 
+    const userLogin = useSelector(state => state.userLogin)
+    const {userInfo} = userLogin
+ 
+ 
+    useEffect(() => {
+ 
+        dispatch({type: PRODUCT_CREATE_RESET})
+ 
+        if(!userInfo.isAdmin){
+            navigate('/login')
+        }
+ 
+        if(successCreate){
+            navigate(`/admin/product/${createdProduct._id}/edit`)
+        }      
+        else {
+            dispatch(listProducts(keyword))
+        }
+ 
+    }, [dispatch, navigate, userInfo, successDelete, successCreate, createdProduct, keyword])
+ 
+ 
+    const deleteHandler = (id) => {
+        if(window.confirm('Are you sure you want to delete this product?')){
+            dispatch(deleteProduct(id))
+        }
+    }
+ 
+ 
+    const createProductHandler = () => {
+        dispatch(createProduct())
+    }
+ 
+ 
+    return (
+        <div>
+            <Row className="align-items-center">
+                <Col>
+                    <h1>Products</h1>
+                </Col>
+                <Col className='text-end'>
+                    <Button className='my-3' onClick={createProductHandler}>
+                        <i className='fas fa-plus'></i> Create Product
+                    </Button>
+                </Col>
+            </Row>      
+ 
+            {loadingDelete && <Loader/>}
+            {errorDelete && <Message variant='danger'>{errorDelete}</Message> }
+ 
+            {loadingCreate && <Loader/>}
+            {errorCreate && <Message variant='danger'>{errorCreate}</Message> }
+ 
+            {loading ? <Loader/>
+                : error ? <Message variant='danger'>{error}</Message> //Hoặc: <Message variant='danger' children={error}></Message>
+                :
+                <div>
+                    <Table striped bordered hover responsive className="table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>NAME</th>
+                                <th>PRICE</th>
+                                <th>CATEGORY</th>
+                                <th>BRAND</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+ 
+                        <tbody>
+                            {products.map(product => (
+                                <tr key={product._id}>
+                                    <td>{product._id}</td>
+                                    <td>
+                                    <Link to={`/product/${product._id}`} style={{ textDecoration: 'none' }}>
+                                        {product.name}
+                                    </Link>
+                                    </td>
+                                    <td>{product.price}</td>
+                                    <td>{product.category}</td>
+                                    <td>{product.brand}</td>
+                                    <td>
+                                        <LinkContainer to={`/admin/product/${product._id}/edit`}>
+                                            <Button variant="light" className="btn-sm">
+                                                <i className="fas fa-edit"></i>
+                                            </Button>
+                                        </LinkContainer>
+ 
+                                        <Button variant="danger" className="btn-sm" onClick={() => deleteHandler(product._id)}>
+                                            <i className="fas fa-trash"></i>
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+ 
+                    <Paginate page={page} pages={pages} isAdmin={true} />
+                </div>
+            }
+        </div>
+    )
+}
+ 
+export default ProductListScreen
+frontend\src\components\SearchBox.js
+
+import React, {useState, useEffect} from 'react'
+import { Button, Form } from 'react-bootstrap'
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+ 
+ 
+const useQuery = () => {
+    return new URLSearchParams(useLocation().search);
+}
+ 
+ 
+function SearchBox() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    //console.log(location.pathname)  
+ 
+    let q = useQuery().get("keyword")
+    q = q ? q : ''
+ 
+    const [keyword, setKeyword] = useState(q)
+ 
+    console.log('q:'+q)
+    console.log('keyword:'+keyword)
+ 
+ 
+    useEffect(() => {
+        setKeyword(q)
+    }, [q])
+ 
+ 
+    const submitHandler = (e) => {
+        e.preventDefault()
+ 
+        if(keyword) {
+            navigate(`/?keyword=${keyword}&page=1`)
+        }
+        else {
+            navigate(location.pathname)
+        }
+    }
+ 
+    return (
+        <Form onSubmit={submitHandler} className='d-flex'>
+            <Form.Control
+                type='text'
+                name='q'
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className='mr-sm-2 ml-sm-5 p-2'
+            ></Form.Control>
+ 
+            <Button
+                type='submit'
+                variant='outline-success'
+                className='p-2 mx-md-1'
+                //style={{"margin-left":"5px", "color":"red"}}
+            >
+                Submit
+            </Button>
+        </Form>
+    )
+}
+ 
+export default SearchBox
+backend\base\views\product_views.py
+
+@api_view(['GET'])
+def getProducts(request):
+ 
+    query = request.query_params.get('keyword')
+    #print('query:', query)
+ 
+    if query == None:
+        query = ''
+    
+    #products = Product.objects.all()
+    itemsPerPage = 8
+    products = Product.objects.filter(name__icontains=query)
+    page = request.query_params.get('page')
+    paginator = Paginator(products, itemsPerPage)
+ 
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+ 
+    if page == None:
+        page = 1
+ 
+    page = int(page)
+ 
+    # print('-------------------')
+    # print(products.next_page_number)
+    # print(paginator.count)
+    # print('-------------------')
+ 
+    # 'number': products.number,
+    # 'num_pages': paginator.num_pages,
+    # 'page_range': list(paginator.page_range),
+    # 'has_next': bool(products.has_next),
+    # 'has_previous': bool(products.has_previous),
+    # 'next_page_number': bool(products.next_page_number),
+    # 'previous_page_number': bool(products.previous_page_number),
+ 
+ 
+    serializer = ProductSerializer(products, many=True)
+    return Response({
+        'products': serializer.data,
+        'page': products.number,
+        'pages': paginator.num_pages,
+    })
+
+
+7 replies
+KZ
+khaled
+1 upvote
+6 months ago
+if you solved all the problem in pagination and search please send me your repo
+
+
+
+KZ
+khaled
+0 upvotes
+6 months ago
+please send your repo
+
+GD
+Guilane
+0 upvotes
+6 months ago
+thank you, and !  and for th productAction.js  ?
+
+VN
+Vinicio
+0 upvotes
+3 months ago
+I have de same problem?
+
+this is my code
+
+import React from 'react';
+import { Pagination } from 'react-bootstrap';
+import { LinkContainer } from 'react-router-bootstrap';
+ 
+ 
+const Paginate = ({ pages, page, keyword, isAdmin = false }) => {
+ 
+    let url = `/keyword=${keyword}&`
+ 
+    // if (keyword) {
+    //     keyword = keyword.split('?keyword=')
+    // }
+    console.log('keyword in paginate: ', keyword);
+    return (
+        pages > 1 && (
+            <Pagination>
+                {[...Array(pages).keys()].map((x) => (
+                    <LinkContainer
+                        key={x + 1}
+                        to={`${url}page=${x + 1}`}
+                    >
+                        <Pagination.Item active={x + 1 === page}>{x + 1}</Pagination.Item>
+                    </LinkContainer>
+                ))}
+            </Pagination>
+        )
+    )
+}
+ 
+export default Paginate
+ 
+ 
+import React, { useState } from 'react';
+import { Button } from 'react-bootstrap';
+import { useNavigate, useLocation } from 'react-router-dom';
+ 
+const SearchBox = () => {
+    const [keyword, setKeyword] = useState('');
+ 
+    const navigate = useNavigate();
+    const location = useLocation();
+ 
+    console.log('keyword in serach:', keyword)
+ 
+    const submitHandler = (e) => {
+        e.preventDefault();
+        if (keyword) {
+            navigate(`/?keyword=${keyword}&page=1`);
+        } else {
+            navigate(location.pathname);
+        }
+    }
+    //mr-auto navbar-nav
+    return (
+        <div className=''>
+            <form className="d-flex" onSubmit={submitHandler} >
+                <input
+                    type='text'
+                    name='q'
+                    className="form-control me-2"
+                    placeholder='Buscar productos'
+                    onChange={(e) => setKeyword(e.target.value)}
+                />
+                <Button
+                    type='submit'
+                    variant='outline-success'
+                    className='p-2'
+                >
+                    Buscar
+                </Button>
+            </form>
+ 
+            {/* <InputGroup>
+                <Form onSubmit={submitHandler} className="mb-3">
+                    <Form.Control
+                        type='text'
+                        name='q'
+                        onChange={(e) => setKeyword(e.target.value)}
+                    // className='mr-sm-2 ml.sm-5'
+                    />
+                    <Button
+                        type='submit'
+                        variant='outline-success'
+                        className='p-2'
+                    >
+                        Buscar
+                    </Button>
+                </Form>
+ 
+            </InputGroup> */}
+ 
+        </div>
+ 
+    )
+}
+ 
+export default SearchBox
